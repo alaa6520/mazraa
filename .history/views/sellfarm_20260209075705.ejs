@@ -1043,20 +1043,25 @@ renderVip(filteredVip);
 
 }
 
+  const ric = window.requestIdleCallback || function(cb){
+    return setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: true }), 1);
+  };
+
+
 /* ======= بدء ======= */
 async function init(){
   try {
     // دفعة أولى صغيرة
-    const first = await fetchJSON('/api/farms/sale?limit=24');
+    const first = await fetchJSON('/api/farms/sale?limit=130');
     allSale = Array.isArray(first) ? first : [];
     const nonVipFirst = allSale.filter(f => ((f?.owner?.subscriptionTier) || f.ownerTier || 'Basic') !== 'VIP');
     renderSale(nonVipFirst);
   } catch(e){ console.warn('sale fetch error (first):', e); renderSale([]); }
 
   // أكمل لاحقًا بهدوء
-  requestIdleCallback(async () => {
+  ric(async () => {
     try{
-      const rest = await fetchJSON('/api/farms/sale?limit=60');
+      const rest = await fetchJSON('/api/farms/sale?limit=90');
       allSale = Array.isArray(rest) ? rest : [];
       const nonVip = allSale.filter(f => ((f?.owner?.subscriptionTier) || f.ownerTier || 'Basic') !== 'VIP');
       renderSale(nonVip);
@@ -1065,7 +1070,7 @@ async function init(){
 
   // VIP منفصل بعد العرض الأول
   try {
-    vipAll = await fetchJSON('/api/farms/sale?vipOnly=1&limit=24');
+    vipAll = await fetchJSON('/api/farms/sale?vipOnly=1&limit=90');
     renderVip(vipAll);
   } catch(e){ console.warn('vip fetch error:', e); renderVip([]); }
 
@@ -1096,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', init);
   };
 </script>
 <script>
-/* ======== حارس اختيار الموقع — يظهر في كل زيارة ======== */
+/* ======== حارس اختيار الموقع ======== */
 (function(){
   const gate     = document.getElementById('location-gate');
   const gateCity = document.getElementById('gate-city');
@@ -1106,10 +1111,24 @@ document.addEventListener('DOMContentLoaded', init);
   const filterCity = document.getElementById('city');
   const filterArea = document.getElementById('area');
 
-  function openGate(){ if (gate) gate.setAttribute('aria-hidden','false'); }
-  function closeGate(){ if (gate) gate.setAttribute('aria-hidden','true'); }
+  function navType(){
+    const nav = performance.getEntriesByType?.('navigation')?.[0];
+    // values: 'navigate' | 'reload' | 'back_forward' | 'prerender'
+    if (nav?.type) return nav.type;
 
-  // إغلاق بالضغط على الخلفية/زر ×/تخطّي
+    // fallback قديم
+    if (performance?.navigation) {
+      const t = performance.navigation.type; // 0,1,2
+      if (t === 1) return 'reload';
+      if (t === 2) return 'back_forward';
+    }
+    return 'navigate';
+  }
+
+  function openGate(){ gate?.setAttribute('aria-hidden','false'); }
+  function closeGate(){ gate?.setAttribute('aria-hidden','true'); } // ✅ لا تخزّن في localStorage
+
+  // إغلاق بالضغط على الخلفية/زر ×/تخطّي (كما عندك)
   document.addEventListener('click', (e)=>{
     const t = e.target;
     if (t && (t.dataset?.close || t.classList?.contains('gate-backdrop'))){
@@ -1117,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', init);
     }
   });
 
-  // تطبيق الاختيار: املأ الفلاتر ونفّذ الترشيح
+  // تطبيق الاختيار (كما عندك)
   btnApply?.addEventListener('click', ()=>{
     const c = (gateCity?.value || '').trim();
     const a = (gateArea?.value || '').trim();
@@ -1125,24 +1144,27 @@ document.addEventListener('DOMContentLoaded', init);
     if (filterCity) filterCity.value = c;
     if (filterArea) filterArea.value = a;
 
-    // نادِ دوال الفلترة المعرّضة من سكربت الموديول
     if (window.setSaleFilters)      window.setSaleFilters(c, a);
     else if (window.applyFilters)   window.applyFilters();
 
     closeGate();
-
-    // مرّر لمنطقة النتائج
     document.getElementById('results')?.scrollIntoView({ behavior:'smooth', block:'start' });
   });
 
-  // افتح الحارس دائمًا عند كل زيارة/تحميل
-  window.addEventListener('DOMContentLoaded', openGate);
-
-  // عند الرجوع من تاريخ المتصفح (BFCache) — أعد الفتح أيضًا
-  window.addEventListener('pageshow', (e)=>{
-    if (e.persisted) openGate();
+  // ✅ افتح البوابة فقط عند (فتح جديد أو Reload)
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const t = navType();
+    if (t === 'back_forward') return;  // رجوع من التفاصيل: لا تفتح
+    openGate();                         // navigate أو reload: افتح دائمًا
   });
+
+  // ✅ لو رجع من الـ BFCache (بعض المتصفحات) تأكد أنها لا تفتح
+  window.addEventListener('pageshow', (e)=>{
+    if (e.persisted || navType() === 'back_forward') closeGate();
+  });
+
 })();
+
 </script>
 
 <%- include('partials/mobile-nav', { 

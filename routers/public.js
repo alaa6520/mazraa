@@ -110,7 +110,7 @@ router.get('/sale', async (req, res) => {
 router.get('/api/farms/sale', async (req, res) => {
   try {
     const vipOnly = String(req.query.vipOnly || '') === '1';
-    const limit   = 96;
+    const limit   = 130;
 
     const match = {
       kind: { $regex: /^sale$/i },

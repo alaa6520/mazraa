@@ -1052,7 +1052,7 @@ renderVip(filteredVip);
 async function init(){
   try {
     // دفعة أولى صغيرة
-    const first = await fetchJSON('/api/farms/sale?limit=90');
+    const first = await fetchJSON('/api/farms/sale?limit=130');
     allSale = Array.isArray(first) ? first : [];
     const nonVipFirst = allSale.filter(f => ((f?.owner?.subscriptionTier) || f.ownerTier || 'Basic') !== 'VIP');
     renderSale(nonVipFirst);
