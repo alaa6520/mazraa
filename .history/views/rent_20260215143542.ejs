@@ -963,7 +963,7 @@ async function init(){
     // لاحقًا: أكمل البيانات وضعها بهدوء
     requestIdleCallback(async () => {
       try{
-        const rest = await fetchJSON('/api/farms/rent?limit=60');
+        const rest = await fetchJSON('/api/farms/rent?limit=150');
         allRent = rest;
         nonVipRent = allRent.filter(f => ((f?.owner?.subscriptionTier) || f.ownerTier || 'Basic') !== 'VIP');
         renderRent(nonVipRent);
@@ -973,7 +973,7 @@ async function init(){
 
   // VIP بشكل منفصل (عدد أقل)
   try {
-    vipAll = await fetchJSON('/api/farms/rent?vipOnly=1&limit=24');
+    vipAll = await fetchJSON('/api/farms/rent?vipOnly=1&limit=150');
     renderVip(vipAll);
   } catch(e){ console.warn('vip fetch error:', e); renderVip([]); }
 
@@ -1003,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', init);
   };
 </script>
 <script>
-/* ======== Rent Location Gate — يظهر في كل زيارة ======== */
+/* ======== Rent Location Gate — يظهر في Reload فقط، ولا يظهر عند الرجوع من التفاصيل ======== */
 (function(){
   const gate       = document.getElementById('rent-location-gate');
   const gateCity   = document.getElementById('rent-gate-city');
@@ -1014,8 +1014,21 @@ document.addEventListener('DOMContentLoaded', init);
   const filterCity = document.getElementById('city');
   const filterArea = document.getElementById('area');
 
+  function navType(){
+    const nav = performance.getEntriesByType?.('navigation')?.[0];
+    if (nav?.type) return nav.type; // 'navigate' | 'reload' | 'back_forward'
+
+    // fallback قديم
+    if (performance?.navigation) {
+      const t = performance.navigation.type; // 0,1,2
+      if (t === 1) return 'reload';
+      if (t === 2) return 'back_forward';
+    }
+    return 'navigate';
+  }
+
   function openGate(){ gate?.setAttribute('aria-hidden','false'); }
-  function closeGate(){ gate?.setAttribute('aria-hidden','true'); }
+  function closeGate(){ gate?.setAttribute('aria-hidden','true'); } // ✅ بدون localStorage
 
   // إغلاق بالضغط على الخلفية/زر ×/تخطّي
   document.addEventListener('click', (e)=>{
@@ -1038,29 +1051,21 @@ document.addEventListener('DOMContentLoaded', init);
     document.getElementById('results')?.scrollIntoView({ behavior:'smooth', block:'start' });
   });
 
-  // افتح الحارس دائمًا عند كل زيارة/تحميل
- function shouldOpenGate(){
-  // إذا المستخدم سبق واختار مرة، لا تفتح مجددًا
-  if (localStorage.getItem('rentGateDone') === '1') return false;
+  // ✅ افتح البوابة فقط عند: فتح جديد أو Reload
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const t = navType();
+    if (t === 'back_forward') return; // رجوع من التفاصيل: لا تفتح
+    openGate();                        // navigate أو reload: افتح دائمًا
+  });
 
-  // إذا موجود فلاتر أصلاً (في الرابط) لا تفتح
-  const qs = new URLSearchParams(location.search);
-  const cityQ = (qs.get('city') || '').trim();
-  const areaQ = (qs.get('area') || '').trim();
-  if (cityQ || areaQ) return false;
-
-  return true;
-}
-
-// افتح البوابة مرة واحدة فقط
-window.addEventListener('DOMContentLoaded', ()=>{
-  if (shouldOpenGate()) openGate();
-});
-
-// عند الرجوع للخلف: لا تفتحها مرة ثانية
-window.addEventListener('pageshow', ()=>{ /* لا شيء */ });
+  // ✅ عند الرجوع من BFCache: تأكد أنها لا تفتح
+  window.addEventListener('pageshow', (e)=>{
+    if (e.persisted || navType() === 'back_forward') closeGate();
+  });
 
 })();
+
+
 </script>
 
 

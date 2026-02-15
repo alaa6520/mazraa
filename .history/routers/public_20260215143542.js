@@ -110,7 +110,7 @@ router.get('/sale', async (req, res) => {
 router.get('/api/farms/sale', async (req, res) => {
   try {
     const vipOnly = String(req.query.vipOnly || '') === '1';
-    const limit   = Math.min(parseInt(req.query.limit || '40', 10), 96);
+    const limit   = 170;
 
     const match = {
       kind: { $regex: /^sale$/i },
@@ -166,7 +166,7 @@ router.get('/api/farms/sale', async (req, res) => {
 router.get('/api/farms/rent', async (req, res) => {
   try {
     const vipOnly = String(req.query.vipOnly || '') === '1';
-    const limit   = Math.min(parseInt(req.query.limit || '40', 10), 96);
+    const limit   = 130;
 
     const match = {
       kind: { $regex: /^rent$/i },
@@ -391,7 +391,7 @@ const promoBottom = await PromoConfig.findOne({ key: 'promo-bottom:contractors' 
   status: 'approved',
   isSuspended: { $ne: true },
   deletedAt: null
-}).limit(24) 
+}).limit(70) 
 .select({
   name: 1,
   services: 1,
@@ -588,6 +588,40 @@ router.get('/best-practices', (req, res) => {
 });
 router.get('/rates', (req, res) => {
   res.render('rates');
+});
+// تتبع نقرات واتساب للمقاول
+router.post('/contractor/:id/whatsapp-click', async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    // زيادة العدّاد 1 بدون ما نجيب الدوك كامل
+    const updated = await Contractor.findByIdAndUpdate(
+      id,
+      { $inc: { whatsappClicks: 1 } },
+      { new: false }
+    );
+
+    if (!updated) return res.status(404).json({ ok:false, msg:'Contractor not found' });
+    return res.json({ ok:true });
+  } catch (e) { next(e); }
+});
+// ✅ تتبع نقرات واتساب للأراضي/المزارع
+router.post('/farm/:id/whatsapp-click', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ ok: false, msg: 'bad_id' });
+
+    await Farm.updateOne(
+      { _id: id },
+      { $inc: { whatsappClicks: 1 } }
+    );
+
+    // sendBeacon غالباً لا يحتاج JSON
+    return res.status(204).end();
+  } catch (e) {
+    console.error('farm whatsapp-click error:', e);
+    return res.status(500).json({ ok: false, msg: 'whatsapp_click_failed' });
+  }
 });
 
 module.exports = router;
