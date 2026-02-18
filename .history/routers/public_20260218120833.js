@@ -523,6 +523,7 @@ router.get('/contractor/:id', async (req, res, next) => {
   }
 });
 
+
 // تقييم المقاول: جلب المتوسط والعدد
 router.get('/contractor/:id/ratings', async (req, res, next) => {
   try {
@@ -540,6 +541,7 @@ router.post('/contractor/:id/rate', async (req, res, next) => {
     if (!Number.isFinite(v) || v < 1 || v > 5) {
       return res.status(400).json({ ok: false, msg: 'قيمة تقييم غير صحيحة' });
     }
+
     const c = await Contractor.findById(req.params.id);
     if (!c) return res.status(404).json({ ok: false, msg: 'Contractor not found' });
 
