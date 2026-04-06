@@ -2,38 +2,40 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const fs = require('fs');
+const archiver = require('archiver');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 console.log('Image recovery mode running');
 
-// ---------------------- الصفحة الرئيسية ----------------------
 app.get('/', (req, res) => {
   res.send('Image recovery mode is running');
 });
 
-// ---------------------- عرض public ----------------------
 app.get('/download-images', (req, res) => {
   const targetPath = path.join(__dirname, 'public', 'assests');
 
   try {
-    const items = fs.readdirSync(targetPath, { withFileTypes: true });
+    if (!fs.existsSync(targetPath)) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Folder not found',
+        triedPath: targetPath
+      });
+    }
 
-    res.json({
-      ok: true,
-      targetPath,
-      items: items.map(i => ({
-        name: i.name,
-        type: i.isDirectory() ? 'dir' : 'file'
-      }))
-    });
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    res.attachment('assests-images.zip');
+    archive.pipe(res);
+    archive.directory(targetPath, false);
+    archive.finalize();
 
   } catch (err) {
-    res.json({
+    res.status(500).json({
       ok: false,
-      error: err.message,
-      triedPath: targetPath
+      error: err.message
     });
   }
 });
