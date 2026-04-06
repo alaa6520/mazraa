@@ -427,20 +427,28 @@ app.get('/sitemap.xml', (req, res) => {
   res.status(404).send('Not found');
 });
 // ---------------------------------------------------------------------------
-// تحميل الصور
+// تحميل الصور (اختبار)
 // ---------------------------------------------------------------------------
 app.get("/download-images", (req, res) => {
-  const archiver = require("archiver");
-  const archive = archiver("zip");
+  const fs = require("fs");
+  const path = require("path");
 
-  res.attachment("images.zip");
-  archive.pipe(res);
+  const uploadsPath = path.join(__dirname, "uploads");
 
-  archive.directory("uploads/", false);
-
-  archive.finalize();
+  try {
+    const files = fs.readdirSync(uploadsPath);
+    res.json({
+      ok: true,
+      count: files.length,
+      files: files.slice(0, 50)
+    });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      error: err.message
+    });
+  }
 });
-
 // ---------------------------------------------------------------------------
 // تشغيل السيرفر
 // ---------------------------------------------------------------------------
