@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
 
 // ---------------------- عرض public ----------------------
 app.get('/download-images', (req, res) => {
-  const targetPath = path.join(__dirname, 'public');
+  const targetPath = path.join(__dirname, 'public', 'assests');
 
   try {
     const items = fs.readdirSync(targetPath, { withFileTypes: true });
