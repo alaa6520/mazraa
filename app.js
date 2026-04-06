@@ -12,12 +12,8 @@ const compression = require('compression');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ---------------------------------------------------------------------------
-// إعدادات أساسية
-// ---------------------------------------------------------------------------
 app.use(methodOverride('_method'));
 app.use(cookieParser());
-
 app.use(compression());
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -28,14 +24,8 @@ app.use(express.json());
 
 app.set('trust proxy', 1);
 
-// ---------------------------------------------------------------------------
-// تعطيل Mongo بالكامل (مهم جدًا)
-// ---------------------------------------------------------------------------
 console.log('⚠️ MongoDB disabled');
 
-// ---------------------------------------------------------------------------
-// الجلسات بدون Mongo
-// ---------------------------------------------------------------------------
 app.use(session({
   name: 'sid',
   secret: 'devsecret',
@@ -47,22 +37,28 @@ app.use(session({
   }
 }));
 
-// ---------------------------------------------------------------------------
-// اختبار الصور
-// ---------------------------------------------------------------------------
+app.use((req, res, next) => {
+  if (!req.cookies.anonId) {
+    res.cookie('anonId', randomUUID(), {
+      httpOnly: false,
+      sameSite: 'lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+  }
+  next();
+});
+
 app.get('/download-images', (req, res) => {
   const uploadsPath = path.join(__dirname, 'uploads');
 
   try {
     const files = fs.readdirSync(uploadsPath);
-
     res.json({
       ok: true,
       uploadsPath,
       count: files.length,
       files: files.slice(0, 50)
     });
-
   } catch (err) {
     res.status(500).json({
       ok: false,
@@ -71,9 +67,10 @@ app.get('/download-images', (req, res) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// تشغيل السيرفر
-// ---------------------------------------------------------------------------
+app.get('/', (req, res) => {
+  res.send('Image recovery mode is running');
+});
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${port}`);
 });
