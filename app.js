@@ -3,7 +3,6 @@ const path = require('path');
 const express = require('express');
 const fs = require('fs');
 const session = require('express-session');
-const nodemailer = require('nodemailer');
 const methodOverride = require('method-override');
 const cookieParser = require('cookie-parser');
 const { randomUUID } = require('crypto');
@@ -24,7 +23,7 @@ app.use(express.json());
 
 app.set('trust proxy', 1);
 
-console.log('⚠️ MongoDB disabled');
+console.log('Image recovery mode running');
 
 app.use(session({
   name: 'sid',
@@ -48,6 +47,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.send('Image recovery mode is running');
+});
+
 app.get('/download-images', (req, res) => {
   const uploadsPath = path.join(__dirname, 'uploads');
 
@@ -67,10 +70,6 @@ app.get('/download-images', (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Image recovery mode is running');
-});
-
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
