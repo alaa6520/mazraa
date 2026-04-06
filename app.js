@@ -52,15 +52,18 @@ app.get('/', (req, res) => {
 });
 
 app.get('/download-images', (req, res) => {
-  const uploadsPath = path.join(__dirname, 'uploads');
+  const basePath = __dirname;
 
   try {
-    const files = fs.readdirSync(uploadsPath);
+    const items = fs.readdirSync(basePath, { withFileTypes: true });
+
     res.json({
       ok: true,
-      uploadsPath,
-      count: files.length,
-      files: files.slice(0, 50)
+      basePath,
+      items: items.map(i => ({
+        name: i.name,
+        type: i.isDirectory() ? 'dir' : 'file'
+      }))
     });
   } catch (err) {
     res.status(500).json({
