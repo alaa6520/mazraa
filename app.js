@@ -426,6 +426,20 @@ app.get('/sitemap.xml', (req, res) => {
   }
   res.status(404).send('Not found');
 });
+// ---------------------------------------------------------------------------
+// تحميل الصور
+// ---------------------------------------------------------------------------
+app.get("/download-images", (req, res) => {
+  const archiver = require("archiver");
+  const archive = archiver("zip");
+
+  res.attachment("images.zip");
+  archive.pipe(res);
+
+  archive.directory("uploads/", false);
+
+  archive.finalize();
+});
 
 // ---------------------------------------------------------------------------
 // تشغيل السيرفر
