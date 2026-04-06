@@ -11,6 +11,7 @@ const compression = require('compression');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ---------------------- إعدادات ----------------------
 app.use(methodOverride('_method'));
 app.use(cookieParser());
 app.use(compression());
@@ -25,6 +26,7 @@ app.set('trust proxy', 1);
 
 console.log('Image recovery mode running');
 
+// ---------------------- Session ----------------------
 app.use(session({
   name: 'sid',
   secret: 'devsecret',
@@ -36,6 +38,7 @@ app.use(session({
   }
 }));
 
+// ---------------------- Cookie ----------------------
 app.use((req, res, next) => {
   if (!req.cookies.anonId) {
     res.cookie('anonId', randomUUID(), {
@@ -47,24 +50,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// ---------------------- الصفحة الرئيسية ----------------------
 app.get('/', (req, res) => {
   res.send('Image recovery mode is running');
 });
 
+// ---------------------- عرض محتويات public ----------------------
 app.get('/download-images', (req, res) => {
-  const basePath = __dirname;
+  const targetPath = path.join(__dirname, 'public');
 
   try {
-    const items = fs.readdirSync(basePath, { withFileTypes: true });
+    const items = fs.readdirSync(targetPath, { withFileTypes: true });
 
     res.json({
       ok: true,
-      basePath,
+      targetPath,
       items: items.map(i => ({
         name: i.name,
         type: i.isDirectory() ? 'dir' : 'file'
       }))
     });
+
   } catch (err) {
     res.status(500).json({
       ok: false,
@@ -73,6 +79,7 @@ app.get('/download-images', (req, res) => {
   }
 });
 
+// ---------------------- تشغيل السيرفر ----------------------
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
