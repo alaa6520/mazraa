@@ -992,7 +992,63 @@ const pStr = priceNum
   activeTab: 'rent',
   isAuth, isAdmin, isContractor, isOwner,
 }) %>
+<script>
+(function(){
+  const el = document.getElementById('videoFrame');
+  if (!el) return;
 
+  const url = "<%= farm.videoUrl || '' %>";
+  if (!url) return;
+
+  function extractYouTubeId(u){
+    try {
+      const x = new URL(u);
+      const host = x.hostname.replace(/^www\./, '').replace(/^m\./, '');
+
+      if (host === 'youtu.be') {
+        return x.pathname.slice(1).split('/')[0];
+      }
+
+      if (host.includes('youtube.com')) {
+        const v = x.searchParams.get('v');
+        if (v) return v;
+
+        const parts = x.pathname.split('/').filter(Boolean);
+
+        if (parts.includes('shorts')) {
+          return parts[parts.indexOf('shorts') + 1];
+        }
+
+        if (parts.includes('embed')) {
+          return parts[parts.indexOf('embed') + 1];
+        }
+      }
+    } catch (_) {}
+
+    if (u.includes('v=')) return u.split('v=')[1].split(/[?&/]/)[0];
+    if (u.includes('youtu.be/')) return u.split('youtu.be/')[1].split(/[?&/]/)[0];
+    if (u.includes('/shorts/')) return u.split('/shorts/')[1].split(/[?&/]/)[0];
+    if (u.includes('embed/')) return u.split('embed/')[1].split(/[?&/]/)[0];
+
+    return null;
+  }
+
+  const videoId = extractYouTubeId(url);
+
+  if (videoId) {
+    el.innerHTML = `
+      <div style="position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:12px;background:#000;">
+        <iframe
+          src="https://www.youtube-nocookie.com/embed/${videoId}"
+          loading="lazy"
+          allowfullscreen
+          style="position:absolute;inset:0;width:100%;height:100%;border:0;">
+        </iframe>
+      </div>
+    `;
+  }
+})();
+</script>
 <script>
 (function(){
   const grid = document.getElementById('galleryMain');
